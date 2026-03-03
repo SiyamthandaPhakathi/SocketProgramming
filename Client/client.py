@@ -15,7 +15,7 @@ def discover_server(inputMessage):
     clientSocket.settimeout(5)
 
     message = inputMessage.encode()
-    clientSocket.sendto(message, ('255.255.255.255', udpPort))
+    clientSocket.sendto(message, ('255.255.255.255', udpPort)) # broadcast address for discovery in LAN
 
     try:
         data, serverAddress = clientSocket.recvfrom(1024)
@@ -94,7 +94,7 @@ def main():
     global serverResponse
     
     # Discover the server
-    discoverInput = input("Enter discover to connect to server:")
+    discoverInput = input("Enter \"DISCOVER\" to connect to server:")
     if discoverInput == "DISCOVER":
         serverIP, tcpPort = discover_server(discoverInput)
     else:
@@ -129,7 +129,8 @@ def main():
     threading.Thread(target=receive_message, args=(clientSocket,), daemon=True).start()
 
     while True: 
-        message = input()
+        message = input("1. LOGOUT to logout\n2. JOIN GROUP|(group name) to join a group\n3. CREATE GROUP|(group name) to create a group\n" \
+        "4. LEAVE GROUP|(group name) to leave\n5. SEND PRIVATE|(recipient) to send a private message\n6. SEND GROUP|(group name)|(message) to send a group message\nEnter input:")
         parts = message.split("|")
 
         if parts[0] == "SEND PRIVATE":
