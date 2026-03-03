@@ -15,7 +15,7 @@ def discover_server(inputMessage):
     clientSocket.settimeout(5)
 
     message = inputMessage.encode()
-    clientSocket.sendto(message, ('127.0.0.1', udpPort))
+    clientSocket.sendto(message, ('255.255.255.255', udpPort))
 
     try:
         data, serverAddress = clientSocket.recvfrom(1024)

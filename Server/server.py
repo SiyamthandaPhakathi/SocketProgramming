@@ -17,7 +17,7 @@ a response with the client address to establish a tcp connection
 """
 def udp_discovery():
     udpSocket = socket(AF_INET, SOCK_DGRAM)
-    udpSocket.bind((serverName, udpPort)) #this is for my local machine for now
+    udpSocket.bind(('', udpPort)) #this is for my local machine for now
     print("UDP discovery running...")
 
     while True:
@@ -33,7 +33,7 @@ connections concurrently
 """
 def tcp_server():
     serverSocket= socket(AF_INET, SOCK_STREAM)
-    serverSocket.bind(('', tcpPort))
+    serverSocket.bind(('0.0.0.0', tcpPort))
     serverSocket.listen()
     print("TCP server running...")
 
