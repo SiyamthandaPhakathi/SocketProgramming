@@ -1,6 +1,7 @@
 from socket import *
 import threading 
 import os
+import sys
 
 udpPort = 5000
 serverResponse = None
@@ -217,6 +218,10 @@ def main():
                 send_file(ip, port, username, filepath)
             else:
                 print("User offline.")
+        elif parts[0] == "LOGOUT":
+            clientSocket.send(message.encode())
+            print("Logging out")
+            sys.exit(0)
         else:
             clientSocket.send(message.encode())
 
