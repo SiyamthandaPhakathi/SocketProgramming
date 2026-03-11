@@ -38,31 +38,34 @@ Receives the messages from the server
 def receive_message(clientSocket):
     global serverResponse
     while True:
-        data = clientSocket.recv(1024).decode()
-        if not data:
-            break
-        parts = data.split("|")
+        try:
+            data = clientSocket.recv(1024).decode()
+            if not data:
+                break
+            parts = data.split("|")
 
-        # User info for private messages
-        if parts[0] == "USER_INFO":
-            with responseLock:
-                serverResponse = data
-        # Prints out group messages
-        elif parts[0] == "GROUP_MESSAGE":
+            # User info for private messages
+            if parts[0] == "USER_INFO":
+                with responseLock:
+                    serverResponse = data
+            # Prints out group messages
+            elif parts[0] == "GROUP_MESSAGE":
                 group = parts[1]
                 sender = parts[2]
                 message = parts[3]
                 print(f"\n[{group}] {sender}: {message}")
-        
-        else:
-            print("\nServer:", data)
+            else:
+                print("\nServer:", data)
+                
+        # The main thread closed the socket during LOGOUT.Break the loop so thread dies naturally
+        except OSError:
+            break
 
 """
 Starts the client's peer-to-peer server
 """
-def start_p2p_server(port):
-    p2pServer = socket(AF_INET, SOCK_STREAM)
-    p2pServer.bind(('', port))
+def start_p2p_server(p2pServer):
+
     p2pServer.listen(5)
 
     while True:
@@ -150,7 +153,10 @@ def main():
 
     # LOGIN
     username = input("Username: ")
-    p2pPort = int(input("Choose P2P port (e.g. 6001): "))
+    p2pServer = socket(AF_INET, SOCK_STREAM)
+    p2pServer.bind(('', 0)) 
+    p2pPort = p2pServer.getsockname()[1] 
+    print(f"Automatically assigned P2P Port: {p2pPort}")
     
     loginMessage = f"LOGIN|{username}|{p2pPort}"
     clientSocket.send(loginMessage.encode())
@@ -164,7 +170,7 @@ def main():
     print("Login successful")
 
     # Starts the threads for the p2p server and the receiving ports socket
-    threading.Thread(target=start_p2p_server, args=(p2pPort,), daemon=True).start()
+    threading.Thread(target=start_p2p_server, args=(p2pServer,), daemon=True).start()
     threading.Thread(target=receive_message, args=(clientSocket,), daemon=True).start()
 
     while True: 
@@ -220,8 +226,9 @@ def main():
                 print("User offline.")
         elif parts[0] == "LOGOUT":
             clientSocket.send(message.encode())
+            clientSocket.close()
             print("Logging out")
-            sys.exit(0)
+            break
         else:
             clientSocket.send(message.encode())
 

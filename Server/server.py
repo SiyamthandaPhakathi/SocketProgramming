@@ -6,7 +6,6 @@ import threading
 tcpPort = 12000
 udpPort = 5000
 
-users = {"justin", "siya", "mongezi"}
 onlineUsers = {}
 groups = {}
 lock = threading.Lock()
@@ -62,8 +61,8 @@ def handle_client(connectionSocket, addr):
             p2pPort = int(parts[2])
             clientIP = addr[0]
             with lock:
-                # Reject if the user is already online or the requested username is not in the users
-                if reqUsername in onlineUsers or reqUsername not in users:
+                # Reject if the user is already online 
+                if reqUsername in onlineUsers:
                     connectionSocket.send("ERROR".encode())
                 else:
                     username = reqUsername
