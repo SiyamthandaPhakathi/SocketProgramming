@@ -140,10 +140,7 @@ def handle_client(connectionSocket, addr):
             for member in groups[groupName]:
                 if member in onlineUsers:
                     memberSocket = onlineUsers[member]["socket"]
-                    memberSocket.send(f"GROUP_MESSAGE|{groupName}|{username}|{message}".encode())
-
-
-
+                    memberSocket.send(f"GROUP_MESSAGE|{groupName}|{username}|{message}".encode())                 
      # Cleanup if the client crashes or abruptly disconnects      
     with lock:
         if username and username in onlineUsers:

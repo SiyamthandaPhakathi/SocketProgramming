@@ -1,5 +1,6 @@
 from socket import *
 import threading 
+import os
 
 udpPort = 5000
 serverResponse = None
@@ -51,6 +52,7 @@ def receive_message(clientSocket):
                 sender = parts[2]
                 message = parts[3]
                 print(f"\n[{group}] {sender}: {message}")
+        
         else:
             print("\nServer:", data)
 
@@ -73,6 +75,20 @@ def start_p2p_server(port):
             message = parts[2]
             print(f"\nPrivate from {sender}: {message}")
             conn.send("ACK".encode())
+        elif parts[0] == "FILE":
+            sender = parts[1]
+            filename = parts[2]
+            filesize = int(parts[3])
+            conn.send("READY".encode())
+
+            received = 0
+            with open("received_" + filename, "wb") as f:
+                while received < filesize:
+                    chunk = conn.recv(4096)
+                    f.write(chunk)
+                    received += len(chunk)
+            print(f"\nReceived file from  {sender}: {filename}")
+            conn.send("ACK".encode())
         
         conn.close()
 
@@ -86,6 +102,28 @@ def send_private(ip, port, sender, message):
     p2pSocket.send(f"DATA|{sender}|{message}".encode())
     ack = p2pSocket.recv(1024).decode()
     print("Received", ack)
+
+    p2pSocket.close()
+
+"""
+Sends private file to the recipient
+"""
+def send_file(ip, port, sender, filepath):
+    p2pSocket = socket(AF_INET, SOCK_STREAM)
+    p2pSocket.connect((ip, port))
+
+    filename = os.path.basename(filepath)
+
+    with open(filepath, "rb") as f:
+        fileData = f.read()
+
+    header = f"FILE|{sender}|{filename}|{len(fileData)}"
+    p2pSocket.send(header.encode())
+    p2pSocket.recv(1024)
+    p2pSocket.sendall(fileData)
+
+    ack = p2pSocket.recv(1024).decode()
+    print("Received:", ack)
 
     p2pSocket.close()
 
@@ -130,7 +168,7 @@ def main():
 
     while True: 
         message = input("1. LOGOUT to logout\n2. JOIN GROUP|(group name) to join a group\n3. CREATE GROUP|(group name) to create a group\n" \
-        "4. LEAVE GROUP|(group name) to leave\n5. SEND PRIVATE|(recipient) to send a private message\n6. SEND GROUP|(group name)|(message) to send a group message\nEnter input:")
+        "4. LEAVE GROUP|(group name) to leave\n5. SEND PRIVATE|(recipient) to send a private message\n6. SEND GROUP|(group name)|(message) to send a group message\n7. SEND FILE PRIVATE|(recipient)|(filepath) to send a file to a recipient\nEnter input:")
         parts = message.split("|")
 
         if parts[0] == "SEND PRIVATE":
@@ -159,6 +197,26 @@ def main():
                 print("User offline.")
         elif parts[0] == "SEND GROUP":
             clientSocket.send(message.encode())
+        elif parts[0] == "SEND FILE PRIVATE":
+            recipient = parts[1]
+            filepath = parts[2]
+
+            clientSocket.send(f"SEND PRIVATE|{recipient}".encode())
+
+            response = None
+            while response is None:
+                with responseLock:
+                    if serverResponse is not None:
+                        response = serverResponse
+                        serverResponse = None
+            responseParts = response.split("|")
+
+            if responseParts[0] == "USER_INFO":
+                ip = responseParts[1]
+                port = int(responseParts[2])
+                send_file(ip, port, username, filepath)
+            else:
+                print("User offline.")
         else:
             clientSocket.send(message.encode())
 
